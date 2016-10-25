@@ -17,6 +17,7 @@ class ReminderMailer < Mailer
     data.each do |user, projects|
       due_date_notification(user, projects).deliver
     end
+     data = {}
    issues = self.find_issues_for_author
     issues.each { |issue| self.insert_author(data, issue) }
     data.each do |user, projects|
