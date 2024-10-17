@@ -5,7 +5,7 @@ module Reminder
       base.class_eval do
         # Same as typing in the class.
         unloadable # Send unloadable so it will not be unloaded in development.
-        before_filter :check_reminder_input, :only => :account
+        before_action :check_reminder_input, :only => :account
 
         def check_reminder_input
           if request.post? and !User.valid_reminder_notification?(params[:user][:reminder_notification])
@@ -16,4 +16,8 @@ module Reminder
       end
     end
   end
+end
+
+unless MyController.included_modules.include? Reminder::MyControllerPatch
+  MyController.send(:include, Reminder::MyControllerPatch)
 end

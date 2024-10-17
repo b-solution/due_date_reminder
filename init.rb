@@ -1,30 +1,3 @@
-require 'redmine'
-require_dependency 'reminder/view_hook'
-
-Rails.configuration.to_prepare do
-  require_dependency 'project'
-  require_dependency 'principal'
-  require_dependency 'user'
-  unless User.included_modules.include? Reminder::UserPatch
-    User.send(:include, Reminder::UserPatch)
-  end
-
-  require_dependency 'issue'
-  unless Issue.included_modules.include? Reminder::IssuePatch
-    Issue.send(:include, Reminder::IssuePatch)
-  end
-
-  require_dependency 'settings_controller'
-  unless SettingsController.included_modules.include? Reminder::SettingsControllerPatch
-    SettingsController.send(:include, Reminder::SettingsControllerPatch)
-  end
-
-  require_dependency 'my_controller'
-  unless MyController.included_modules.include? Reminder::MyControllerPatch
-    MyController.send(:include, Reminder::MyControllerPatch)
-  end
-end
-
 Redmine::Plugin.register :due_date_reminder do
   name 'Due Date Reminder plugin'
   author 'Oleg Kandaurov'
@@ -32,6 +5,39 @@ Redmine::Plugin.register :due_date_reminder do
   version '0.3.2'
   url 'https://github.com/f0y/due_date_reminder'
   author_url 'http://f0y.me'
-  requires_redmine :version_or_higher => '2.0.0'
-  settings :default => {'reminder_notification' => '1,3,5'}, :partial => 'reminder/settings'
+  requires_redmine :version_or_higher => '5.0.0'
+  settings :default => { 'reminder_notification' => '1,3,5' }, :partial => 'reminder/settings'
 end
+if Rails.configuration.respond_to?(:autoloader) && Rails.configuration.autoloader == :zeitwerk
+  Rails.autoloaders.each { |loader| loader.ignore(File.dirname(__FILE__) + '/lib') }
+end
+
+require File.dirname(__FILE__) + '/lib/reminder/issue_patch'
+require File.dirname(__FILE__) + '/lib/reminder/user_patch'
+require File.dirname(__FILE__) + '/lib/reminder/settings_controller_patch'
+require File.dirname(__FILE__) + '/lib/reminder/my_controller_patch'
+
+class ReminderViewHook < Redmine::Hook::ViewListener
+  def view_layouts_base_body_bottom(context = {})
+    if context[:controller] && (context[:controller].is_a?(MyController))
+      "script type='text/javascript'>
+          $('#no_self_notified').parent().parent().append($('#reminder_notification'));
+        </script>
+      ".html_safe
+    end
+  end
+
+  def view_my_account_preferences(context = {})
+    "
+      <p id='reminder_notification'>
+        #{context[:form].text_field :reminder_notification, :required => true, :size => 10,
+                                    :value                            => context[:user].reminder_notification}
+        <br/>
+        <em>#{label_tag 'text_comma_separated', l(:text_comma_separated)}</em>
+      </p>
+    ".html_safe
+  end
+end
+
+
+

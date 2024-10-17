@@ -18,3 +18,6 @@ module Reminder
     end
   end
 end
+unless Issue.included_modules.include? Reminder::IssuePatch
+  Issue.send(:include, Reminder::IssuePatch)
+end

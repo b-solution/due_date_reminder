@@ -30,3 +30,7 @@ module Reminder
     end
   end
 end
+
+unless User.included_modules.include? Reminder::UserPatch
+  User.send(:include, Reminder::UserPatch)
+end
